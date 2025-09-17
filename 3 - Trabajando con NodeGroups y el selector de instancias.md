@@ -50,16 +50,124 @@ En el archivo especificamos un **managed node group (ng-1-mng)** y un **node gro
 eksctl create cluster -f my-cluster.yaml
 ```
 
+![Verificar versiones](/img/3-1.image.jpg)
 
+4.- Verificamos los nodos
 
+```
+eksctl get nodegroups --cluster my-cluster
+```
 
+![Verificar versiones](/img/3-2.image.jpg)
 
+5.- Vamos a eliminar el node group ng-1-ng.
+```
+eksctl delete nodegroup ng-1-ng --cluster my-cluster
+```
+![Verificar versiones](/img/3-3.image.jpg)
 
+6.- Revisamos los nodegroups del cluster my-cluster
+```
+eksctl get nodegroups --cluster my-cluster
+```
+![Verificar versiones](/img/3-4.image.jpg)
 
+Verificamos que solo tenemos un nodegroup
 
+7.- Vamos a agregar un nodegroup desde nuestro archivo inicial my-cluster.yaml. Abrimos nano y editamos el archivo colocando el siguiente contenido
+```
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
 
+metadata:
+  name: my-cluster
+  region: us-west-2
 
+managedNodeGroups:
+  - name: ng-1-mng
+    instanceType: t3.large
+    desiredCapacity: 2
+  - name: ng-2-mng
+    instanceType: t3.large
+    desiredCapacity: 2
+    
+nodeGroups:
+  - name: ng-1-ng
+    instanceType: t3.mediun
+    desiredCapacity: 2
+```
 
+8.- Ahora vamos a crear solo el nodegroup ng-2-mng con el siguiente comando.
+```
+eksctl create nodegroup --config-file=my-cluster.yaml --include='ng-2-mng' --exclude='ng-1-mng,ng-1-ng'
+```
+![Verificar versiones](/img/3-5.image.jpg)
+
+9.- Ahora revisamos los nodegroups y deberiamos tener dos
+```
+eksctl get nodegroups --cluster my-cluster
+```
+![Verificar versiones](/img/3-6.image.jpg)
+
+10.- Finalmente eliminamos el cluster
+```
+eksctl delete cluster -f my-cluster.yaml --disable-nodegroup-eviction
+```
+
+## Selector de instancias
+
+El selector de instancias crea una lista con los tipos de instancia con el criterios de vCPU, memoria, número de GPU y arquitectura de CPU. Al pasar los criterios del selector de instancias, eksctl crea un grupo de nodos con los tipos de instancia que coinciden con los criterios proporcionados.
+
+## En acción: Creacion de dos nodegroup usando el selector de instancias
+
+1.- Vamos al servio de AWS CloudShell
+
+2.- Creamos un archivo y lo editamos con nano
+```
+nano selector-cluster.yaml
+```
+Colocamos el siguiente contenido en el archivo
+```
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: selector-cluster
+  region: us-west-2
+
+nodeGroups:
+- name: ng
+  instanceSelector:
+    vCPUs: 2
+    memory: "4"
+
+managedNodeGroups:
+- name: mng
+  instanceSelector:
+    vCPUs: 2
+    memory: 2GiB
+    cpuArchitecture: x86_64
+```
+3.- Creamos el cluster con eksctl. Asi que lanzamos el siguiente comando:
+```
+eksctl create cluster -f selector-cluster.yaml
+```
+4.- Verificamos los nodegroups
+```
+eksctl get nodegroups --cluster selector-cluster
+```
+![Verificar versiones](/img/3-7.image.jpg)
+5.- Verificamos los nodos
+```
+kubectl get nodes
+```
+
+![Verificar versiones](/img/3-8.image.jpg)
+
+6.- Despues de verificar que todo este correcto eliminamos el cluster
+```
+eksctl delete cluster -f selector-cluster.yaml --disable-nodegroup-eviction
+```
 
 
 
